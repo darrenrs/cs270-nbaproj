@@ -23,7 +23,7 @@ TEAM_CODES = {
   "Miami": "MIA",
   "Milwaukee": "MIL",
   "Minnesota": "MIN",
-  "NewJersey": "NJN",
+  "NewJersey": "BKN",
   "NewOrleans": "NOP",
   "NewYork": "NYK",
   "OklahomaCity": "OKC",
@@ -33,15 +33,11 @@ TEAM_CODES = {
   "Portland": "POR",
   "Sacramento": "SAC",
   "SanAntonio": "SAS",
-  "Seattle": "SEA",
+  "Seattle": "OKC",
   "Toronto": "TOR",
   "Utah": "UTA",
   "Washington": "WAS"
 }
-TEAM_CONCORDANCE = [
-  ['NJN', 'BKN'],
-  ['SEA', 'OKC']
-]
 
 MINIMUM_DATE_FOR_UNDERFLOW = (10, 15)
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
@@ -88,11 +84,12 @@ if __name__ == "__main__":
       json_obj["Date"] = get_date(x["Date"].iloc[0], BASE_YEAR+n)
 
       # if [0]=0, then home favored, else if [0]=1 then away favored
-      betting_attr_ord = np.argsort(x["Close"])
-      betting_attr_coeff = betting_attr_ord.iloc[1]*2-1
+      spread_attr_ord = np.argsort(x["Close"])
+      spread_attr_coeff = spread_attr_ord.iloc[1]*2-1
 
-      json_obj["HomeBettingLine"] = x["Close"].iloc[betting_attr_ord.iloc[0]] * betting_attr_coeff
+      json_obj["HomeSpread"] = x["Close"].iloc[spread_attr_ord.iloc[0]] * spread_attr_coeff
       all_data.append(json_obj)
-    
+  
   all_data_df = pd.DataFrame(all_data)
-  all_data_df.to_csv('bettingline_out.csv')
+  all_data_df['InnerJoinCode'] = all_data_df.apply(lambda r: f'{r["AwayTeam"]}{r["HomeTeam"]}{r["Date"].replace("-", "")}', axis=1)
+  all_data_df.to_csv('bettingline_out.csv', index=False)
