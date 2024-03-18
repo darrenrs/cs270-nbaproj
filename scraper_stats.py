@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 from nba_api.stats.endpoints import leaguegamefinder
-from nba_api.stats.library.parameters import SeasonType
 import pandas as pd
 from tqdm import tqdm
 
 # REQUIRED format for dates; split into segments because of 30k response limit
 DATES = [
-  ('01/01/2018', '01/16/2023'),
+  ('01/01/2023', '03/16/2024'),
+  ('01/01/2018', '12/31/2022'),
   ('01/01/2013', '12/31/2017'),
-  ('10/30/2007', '12/31/2012')
+  ('01/01/2008', '12/31/2012'),
+  ('10/01/2004', '12/31/2007')
 ]
 PROPS = [
   'WL',
@@ -36,6 +37,8 @@ PROPS = [
 
 def modern_team_id(team_id):
   if team_id == 'NOH':
+    return 'NOP'
+  elif team_id == 'NOK':
     return 'NOP'
   elif team_id == 'NJN':
     return 'BKN'
