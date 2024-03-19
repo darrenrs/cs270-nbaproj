@@ -2,10 +2,11 @@
 from nba_api.stats.endpoints import leaguegamefinder
 import pandas as pd
 from tqdm import tqdm
+from datetime import datetime, timedelta
 
 # REQUIRED format for dates; split into segments because of 30k response limit
 DATES = [
-  ('01/01/2023', '03/16/2024'),
+  ('01/01/2023', (datetime.today() - timedelta(days=1)).strftime('%m/%d/%Y')),
   ('01/01/2018', '12/31/2022'),
   ('01/01/2013', '12/31/2017'),
   ('01/01/2008', '12/31/2012'),
