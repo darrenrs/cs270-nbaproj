@@ -1,0 +1,8 @@
+HomeSpread is the spread for the home team, I was thinking we could solve it both classification and regression.
+
+Classification we’d simply check if it got the correct spread (either greater or less than the specified number)
+
+Regression would return the spread as a float instead of a boolean, and it would check its distance to the real score.
+
+The classification is sort of the original problem but the regression method is a different approach that I recently thought of.
+It opens up the possibility for a few more ML models. I can work on a few of those tonight or tomorrow.

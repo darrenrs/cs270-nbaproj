@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import pandas as pd
+import numpy as np
+import argparse
 import math
 from tqdm import tqdm
 
@@ -9,6 +11,85 @@ ELO_RMEAN = 1505
 ELO_RWEIGHT = 0.25
 ELO_K = 20
 ELO_HOMEADV = 100
+
+# default value for rolling avg
+ROLLING_AVG_LAST_X = [0.4, 0.3, 0.2, 0.1]
+
+FEATURES = [
+  'MIN',
+  'PTS',
+  'FGM',
+  'FGA',
+  'FG_PCT',
+  'FG3M',
+  'FG3A',
+  'FG3_PCT',
+  'FTM',
+  'FTA',
+  'FT_PCT',
+  'OREB',
+  'DREB',
+  'REB',
+  'AST',
+  'STL',
+  'BLK',
+  'TOV',
+  'PF',
+  'PLUS_MINUS'
+]
+DROP_FINAL = [
+  'MIN',
+  'FGM',
+  'FGA',
+  'FG_PCT',
+  'FG3M',
+  'FG3A',
+  'FG3_PCT',
+  'FTM',
+  'FTA',
+  'FT_PCT',
+  'OREB',
+  'DREB',
+  'REB',
+  'AST',
+  'STL',
+  'BLK',
+  'TOV',
+  'PF',
+  'PLUS_MINUS'
+]
+TEAM_CODES = [
+  "ATL",
+  "BOS",
+  "BKN",
+  "CHA",
+  "CHI",
+  "CLE",
+  "DAL",
+  "DEN",
+  "DET",
+  "GSW",
+  "HOU",
+  "IND",
+  "LAC",
+  "LAL",
+  "MEM",
+  "MIA",
+  "MIL",
+  "MIN",
+  "NOP",
+  "NYK",
+  "OKC",
+  "ORL",
+  "PHI",
+  "PHX",
+  "POR",
+  "SAC",
+  "SAS",
+  "TOR",
+  "UTA",
+  "WAS"
+]
 
 MINIMUM_DATE_FOR_UNDERFLOW = (10, 15)
 
@@ -25,7 +106,21 @@ def elo_prob(a, b):
 def elo_change(p, a):
   return ELO_K * (a - p)
 
+def weight_multi(v):
+  return sum([x*y for x, y in zip(v, ROLLING_AVG_LAST_X)])
+
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument('-w', nargs="+", type=float, default=ROLLING_AVG_LAST_X)
+  args = parser.parse_args()
+  
+  # reverse because we process weights in a stack. Append to list at the end. Pop from beginning
+  ROLLING_AVG_LAST_X = list(reversed(args.w))
+
+  if sum(ROLLING_AVG_LAST_X) > 1+1e-6 or sum(ROLLING_AVG_LAST_X) < 1-1e-6:  # slight error due to floating point inaccuracies
+    print("Sum of pre-game weights must be 1")
+    exit(1)
+  
   with open('bettingline_out.csv', 'r') as f:
     spread = pd.read_csv(f)
     spread = spread.drop('AwayTeam', axis=1)\
@@ -78,6 +173,43 @@ if __name__ == "__main__":
     df.at[i, 'ELO_HOME'] = home_elo
     df.at[i, 'ELO_AWAY'] = away_elo
 
+  # generate rolling average of team performance
+  for i in FEATURES:
+    df[i+'_AWAY_RA'] = np.nan
+    df[i+'_HOME_RA'] = np.nan
+  
+  memory = {}
+
+  for i in TEAM_CODES:
+    features = {}
+    for j in FEATURES:
+      features[j] = []
+    memory[i] = features
+
+  for i, current_game in tqdm(df.iterrows()):
+    home_team = current_game['HomeTeam']
+    away_team = current_game['AwayTeam']
+
+    for j in FEATURES:
+      memory[home_team][j].append( df.at[i, j+'_HOME'] )
+      memory[away_team][j].append( df.at[i, j+'_AWAY'] )
+
+      # pop excess
+      if len(memory[home_team][j]) > len(ROLLING_AVG_LAST_X):
+        memory[home_team][j].pop(0)
+
+      if len(memory[away_team][j]) > len(ROLLING_AVG_LAST_X):
+        memory[away_team][j].pop(0)
+      
+      # full length of stack obtained, add average weight
+      if len(memory[home_team][j]) == len(ROLLING_AVG_LAST_X):
+        df.at[i, j+'_HOME_RA'] = weight_multi(memory[home_team][j])
+
+      if len(memory[away_team][j]) == len(ROLLING_AVG_LAST_X):
+        df.at[i, j+'_AWAY_RA'] = weight_multi(memory[away_team][j])
+
+  df = df.drop([x+'_AWAY' for x in DROP_FINAL], axis=1)
+  df = df.drop([x+'_HOME' for x in DROP_FINAL], axis=1)
   df.to_csv('combined_out.csv', index=False)
 
   print("== ELO Sorted ==")
