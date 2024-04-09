@@ -132,6 +132,7 @@ if __name__ == "__main__":
 
   df = pd.merge(stats, spread, how='left', on='InnerJoinCode')
   df = df.drop('InnerJoinCode', axis=1)
+  df['HomeSpreadActual'] = np.nan
   df['ELO_AWAY'] = 0
   df['ELO_HOME'] = 0
 
@@ -173,11 +174,13 @@ if __name__ == "__main__":
     df.at[i, 'ELO_HOME'] = home_elo
     df.at[i, 'ELO_AWAY'] = away_elo
 
+    df.at[i, 'HomeSpreadActual'] = current_game['PTS_AWAY'] - current_game['PTS_HOME']
+
   # generate rolling average of team performance
   for i in FEATURES:
     df[i+'_AWAY_RA'] = np.nan
     df[i+'_HOME_RA'] = np.nan
-  
+
   memory = {}
 
   for i in TEAM_CODES:
@@ -210,6 +213,9 @@ if __name__ == "__main__":
 
   df = df.drop([x+'_AWAY' for x in DROP_FINAL], axis=1)
   df = df.drop([x+'_HOME' for x in DROP_FINAL], axis=1)
+  df['HomeSpreadCorrectDirection'] = df['HomeSpreadActual'] > df['HomeSpread']
+  df['HomeSpreadCorrectDirection'] = df['HomeSpreadCorrectDirection'].astype(int)
+  
   df.to_csv('combined_out.csv', index=False)
 
   print("== ELO Sorted ==")
