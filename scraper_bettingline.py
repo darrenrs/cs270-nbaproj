@@ -91,5 +91,9 @@ if __name__ == "__main__":
       all_data.append(json_obj)
   
   all_data_df = pd.DataFrame(all_data)
+
+  # hacky fix to null values being coerced into ±700
+  all_data_df = all_data_df[(all_data_df['HomeSpread'] < 30) & (all_data_df['HomeSpread'] > -30)]
+
   all_data_df['InnerJoinCode'] = all_data_df.apply(lambda r: f'{r["AwayTeam"]}{r["HomeTeam"]}{r["Date"].replace("-", "")}', axis=1)
   all_data_df.to_csv('bettingline_out.csv', index=False)

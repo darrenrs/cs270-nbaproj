@@ -198,18 +198,18 @@ if __name__ == "__main__":
       memory[away_team][j].append( df.at[i, j+'_AWAY'] )
 
       # pop excess
-      if len(memory[home_team][j]) > len(ROLLING_AVG_LAST_X):
+      if len(memory[home_team][j]) > len(ROLLING_AVG_LAST_X) + 1:
         memory[home_team][j].pop(0)
 
-      if len(memory[away_team][j]) > len(ROLLING_AVG_LAST_X):
+      if len(memory[away_team][j]) > len(ROLLING_AVG_LAST_X) + 1:
         memory[away_team][j].pop(0)
       
       # full length of stack obtained, add average weight
-      if len(memory[home_team][j]) == len(ROLLING_AVG_LAST_X):
-        df.at[i, j+'_HOME_RA'] = weight_multi(memory[home_team][j])
+      if len(memory[home_team][j]) == len(ROLLING_AVG_LAST_X) + 1:
+        df.at[i, j+'_HOME_RA'] = weight_multi(memory[home_team][j][:-1])
 
-      if len(memory[away_team][j]) == len(ROLLING_AVG_LAST_X):
-        df.at[i, j+'_AWAY_RA'] = weight_multi(memory[away_team][j])
+      if len(memory[away_team][j]) == len(ROLLING_AVG_LAST_X) + 1:
+        df.at[i, j+'_AWAY_RA'] = weight_multi(memory[away_team][j][:-1])
 
   df = df.drop([x+'_AWAY' for x in DROP_FINAL], axis=1)
   df = df.drop([x+'_HOME' for x in DROP_FINAL], axis=1)
